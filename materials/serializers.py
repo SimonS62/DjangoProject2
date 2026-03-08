@@ -5,9 +5,10 @@ from .models import Course, Lesson
 class CourseSerializer(serializers.ModelSerializer):
     class Meta:
         model = Course
-        fields = '__all__' # Включает все поля модели
+        fields = "__all__"  # Включает все поля модели
+
 
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = '__all__'
+        fields = "__all__"

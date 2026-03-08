@@ -5,10 +5,10 @@ from django.conf.urls.static import static
 
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('api/v1/', include('users.urls')), # Пока пусто, но для будущих API-эндпоинтов
-    path('api/v1/', include('materials.urls')), # Для материалов
-    path('api/v1/', include('materials.urls')),
+    path("admin/", admin.site.urls),
+    path("api/materials/", include("materials.urls", namespace="materials")),
+    path("api/users/", include("users.urls", namespace="users")),
+    path('api/courses/', include('courses.urls')),
 ]
 
 # Для отдачи медиафайлов во время разработки
