@@ -1,31 +1,39 @@
 import django_filters
-from .models import Payment
-from courses.models import Course, Lesson
+from django_filters import rest_framework as filters
+from courses.models import Payment
 
 
-class PaymentFilter(django_filters.FilterSet):
-    # Фильтрация по дате оплаты (простой вариант по полной дате)
-    payment_date = django_filters.DateFilter(lookup_expr='date')
-
-    # Фильтрация по ID курса
-    course_id = django_filters.ModelChoiceFilter(
-        queryset=Course.objects.all(),
-        field_name='course_id', # Фильтруем по полю 'course_id' в модели Payment
-        to_field_name='id', # Берем ID из модели Course
-        label='Курс (ID)'
+class PaymentFilter(filters.FilterSet):
+    # Фильтр по способу оплаты
+    payment_method = django_filters.ChoiceFilter(
+        choices=Payment.PAYMENT_METHODS,
+        lookup_expr='iexact'
     )
 
-    # Фильтрация по ID урока
-    lesson_id = django_filters.ModelChoiceFilter(
-        queryset=Lesson.objects.all(),
-        field_name='lesson_id', # Фильтруем по полю 'lesson_id' в модели Payment
-        to_field_name='id', # Берем ID из модели Lesson
-        label='Урок (ID)'
+    # Фильтр по курсу (по id)
+    course = django_filters.NumberFilter(
+        field_name='course__id',
+        lookup_expr='exact'
     )
 
-    # Фильтрация по способу оплаты
-    payment_method = django_filters.ChoiceFilter(choices=Payment.PaymentMethod.choices)
+    # Фильтр по уроку (по id)
+    lesson = django_filters.NumberFilter(
+        field_name='lesson__id',
+        lookup_expr='exact'
+    )
+
+    # Фильтр по дате (больше или равно)
+    payment_date_gte = django_filters.DateFilter(
+        field_name='payment_date',
+        lookup_expr='gte'
+    )
+
+    # Фильтр по дате (меньше или равно)
+    payment_date_lte = django_filters.DateFilter(
+        field_name='payment_date',
+        lookup_expr='lte'
+    )
 
     class Meta:
         model = Payment
-        fields = ['payment_date', 'course_id', 'lesson_id', 'payment_method']
+        fields = ['payment_method', 'course', 'lesson']

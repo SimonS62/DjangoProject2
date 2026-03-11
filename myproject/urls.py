@@ -6,9 +6,8 @@ from django.conf.urls.static import static
 
 urlpatterns = [
     path("admin/", admin.site.urls),
-    path("api/materials/", include("materials.urls", namespace="materials")),
-    path("api/users/", include("users.urls", namespace="users")),
-    path('api/courses/', include('courses.urls')),
+    path('api/courses/', include('courses.urls', namespace='courses')),
+    path('api/users/', include('users.urls', namespace='users')),
 ]
 
 # Для отдачи медиафайлов во время разработки

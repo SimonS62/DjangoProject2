@@ -1,14 +1,15 @@
 from rest_framework import viewsets, filters
-from .models import Payment
+from courses.models import Payment
+from courses.serializers import PaymentSerializer
 from .filters import PaymentFilter
+
 
 class PaymentViewSet(viewsets.ModelViewSet):
     queryset = Payment.objects.all()
     serializer_class = PaymentSerializer
     filter_backends = (
-        DjangoFilterBackend,
-        filters.OrderingFilter # Добавляем стандартный фильтр сортировки DRF
+        filters.OrderingFilter
     )
-    filterset_class = PaymentFilter
-    ordering_fields = ('payment_date',) # Поля, по которым можно сортировать
-    ordering = ('-payment_date',) # Сортировка по умолчанию (новые платежи первыми)
+    filter_class = PaymentFilter
+    ordering_fields = ('payment_date',)
+    ordering = ('-payment_date',)

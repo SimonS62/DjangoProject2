@@ -1,27 +1,31 @@
 from rest_framework import serializers
-from .models import Course, Lesson
+from .models import Course, Lesson, Payment
+
+
+class CourseSerializer(serializers.ModelSerializer):
+    lessons_count = serializers.SerializerMethodField()
+
+    class Meta:
+        model = Course
+        fields = '__all__'
+        read_only_fields = ['owner']
+
+    @staticmethod
+    def get_lessons_count(obj):
+        return obj.lessons.count()
 
 
 class LessonSerializer(serializers.ModelSerializer):
     class Meta:
         model = Lesson
-        fields = '__all__' # Выводит все поля урока
+        fields = '__all__'
+        read_only_fields = ['owner']
 
-class CourseSerializer(serializers.ModelSerializer):
-    num_lessons = serializers.SerializerMethodField()
-    lessons = LessonSerializer(many=True, read_only=True)
 
+class PaymentSerializer(serializers.ModelSerializer):
+    payment_method = serializers.ChoiceField(
+        choices=Payment.PAYMENT_METHODS
+    )
     class Meta:
-        model = Course
-        fields = (
-            'id',
-            'title',
-            'preview',
-            'description',
-            'num_lessons',
-            'lessons'
-        )
-        read_only_fields = ('num_lessons', 'lessons')
-
-    def get_num_lessons(self, obj):
-        return obj.lessons.count()
+        model = Payment
+        fields = '__all__'
