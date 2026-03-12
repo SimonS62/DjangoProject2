@@ -3,6 +3,7 @@ from django.contrib.auth import get_user_model
 
 
 User = get_user_model()
+objects = models.Manager()
 
 class Course(models.Model):
     """Модель курса"""
@@ -30,6 +31,7 @@ class Course(models.Model):
 
 class Lesson(models.Model):
     """Модель урока"""
+    objects = None
     title = models.CharField(max_length=200, verbose_name='Название')
     description = models.TextField(verbose_name='Описание')
     preview = models.ImageField(upload_to='lessons/previews/', null=True, blank=True, verbose_name='Превью')
@@ -66,6 +68,7 @@ class Payment(models.Model):
         ('cash', 'Наличные'),
         ('card', 'Карта'),
     ]
+
 
     user = models.ForeignKey(
         User,

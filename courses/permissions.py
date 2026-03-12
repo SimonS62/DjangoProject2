@@ -1,16 +1,10 @@
 from rest_framework import permissions
 
 
-class IsOwnerOrStaff(permissions.BasePermission):
-    """Разрешение только для владельца или персонала"""
-
+class IsOwner(permissions.BasePermission):
     def has_object_permission(self, request, view, obj):
-        # Разрешаем персоналу
-        if request.user.is_staff:
-            return True
+        return obj.owner == request.user
 
-        # Проверяем владельца
-        if hasattr(obj, 'owner'):
-            return obj.owner == request.user
-
-        return False
+class IsModerator(permissions.BasePermission):
+    def has_permission(self, request, view):
+        return request.user.groups.filter(name='moderator').exists()
