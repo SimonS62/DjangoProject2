@@ -1,10 +1,12 @@
-from rest_framework import generics, viewsets
-from rest_framework.permissions import IsAuthenticated, IsAdminUser
+from rest_framework import generics, viewsets, filters
+from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
+from courses import permissions
 from courses.models import Course, Lesson, Payment
 from courses.permissions import IsOwner, IsModerator
 from courses.serializers import CourseSerializer, LessonSerializer, PaymentSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from users.filters import PaymentFilter
+from users.permissions import IsModerator
 
 
 # Уроки через Generic классы
@@ -53,20 +55,61 @@ class LessonDestroyAPIView(generics.DestroyAPIView):
 class CourseViewSet(viewsets.ModelViewSet):
     queryset = Course.objects.all()
     serializer_class = CourseSerializer
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_class = CourseFilter
 
     def get_permissions(self):
-        if self.action == 'create':
-            permission_classes = [IsAuthenticated, ~IsModerator]
-        elif self.action in ['update', 'partial_update']:
-            permission_classes = [IsAuthenticated, IsOwner | IsModerator]
-        elif self.action == 'destroy':
-            permission_classes = [IsAuthenticated, IsOwner & ~IsModerator]
-        else:
-            permission_classes = [IsAuthenticated]
-        return [permission() for permission in permission_classes]
+        # Общие права: только аутентифицированные для большинства действий
+        base_permissions = [IsAuthenticated]
 
-    def perform_create(self, serializer):
-        serializer.save(owner=self.request.user)
+        if self.action == 'list':
+            # Модераторы и все аутентифицированные могут просматривать списки
+            # Используем | (OR) для объединения прав
+            self.permission_classes = [AllowAny] # Или IsAuthenticated, если нужно
+        elif self.action == 'retrieve':
+            # Модераторы и все аутентифицированные могут просматривать детали
+            self.permission_classes = [AllowAny] # Или IsAuthenticated, если нужно
+        elif self.action == 'update' or self.action == 'partial_update':
+            # Модераторы и владельцы могут редактировать
+            self.permission_classes = [IsAuthenticated, IsModerator | IsOwner] # <-- Тут мы используем IsOwner из Задания 3
+        elif self.action == 'create':
+            # Только модераторы могут создавать новые курсы
+            self.permission_classes = [IsAuthenticated, IsModerator]
+        elif self.action == 'destroy':
+            # Только модераторы могут удалять курсы
+            self.permission_classes = [IsAuthenticated, IsModerator]
+        else:
+            self.permission_classes = base_permissions
+        return [permission() for permission in self.permission_classes]
+
+class LessonViewSet(viewsets.ModelViewSet):
+    queryset = Lesson.objects.all()
+    serializer_class = LessonSerializer
+    filter_backends = [DjangoFilterBackend, filters.OrderingFilter]
+    filterset_class = LessonFilter
+
+    def get_permissions(self):
+        # Общие права: только аутентифицированные для большинства действий
+        base_permissions = [IsAuthenticated]
+
+        if self.action == 'list':
+            # Модераторы и все аутентифицированные могут просматривать списки
+            self.permission_classes = [AllowAny] # Или IsAuthenticated, если нужно
+        elif self.action == 'retrieve':
+            # Модераторы и все аутентифицированные могут просматривать детали
+            self.permission_classes = [AllowAny] # Или IsAuthenticated, если нужно
+        elif self.action == 'update' or self.action == 'partial_update':
+            # Модераторы и владельцы могут редактировать
+            self.permission_classes = [IsAuthenticated, IsModerator | IsOwner] # <-- Тут мы используем IsOwner из Задания 3
+        elif self.action == 'create':
+            # Только модераторы могут создавать новые уроки
+            self.permission_classes = [IsAuthenticated, IsModerator]
+        elif self.action == 'destroy':
+            # Только модераторы могут удалять уроки
+            self.permission_classes = [IsAuthenticated, IsModerator]
+        else:
+            self.permission_classes = base_permissions
+        return [permission() for permission in self.permission_classes]
 
 class PaymentViewSet(viewsets.ModelViewSet):
     """ViewSet для платежей"""
