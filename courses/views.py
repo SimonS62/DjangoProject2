@@ -1,12 +1,14 @@
 from rest_framework import generics, viewsets, filters
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
-from courses import permissions
-from courses.models import Course, Lesson, Payment
+from rest_framework.generics import RetrieveAPIView
+from courses.models import Course, Lesson, Payment, Subscription
 from courses.permissions import IsOwner, IsModerator
 from courses.serializers import CourseSerializer, LessonSerializer, PaymentSerializer
 from django_filters.rest_framework import DjangoFilterBackend
 from users.filters import PaymentFilter
 from users.permissions import IsModerator
+from .paginators import StandardPagination
+from django.db.models import Exists, OuterRef
 
 
 # Уроки через Generic классы
@@ -124,3 +126,52 @@ class PaymentViewSet(viewsets.ModelViewSet):
         if user.is_staff:
             return Payment.objects.all()
         return Payment.objects.filter(user=user)
+
+class CourseListView(generics.ListAPIView): # Или APIView, ListCreateAPIView
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    pagination_class = StandardPagination # Интегрируем пагинатор
+
+    def get_queryset(self):
+        """
+        Добавляем признак подписки для каждого курса в списке,
+        если пользователь аутентифицирован.
+        """
+        queryset = super().get_queryset()
+        request = self.request
+        if request.user.is_authenticated:
+            # Используем Exists для эффективной проверки подписки
+            subscribed_courses = Subscription.objects.filter(
+                user=request.user,
+                course_id=OuterRef('pk') # Сравниваем с pk текущего курса
+            )
+            queryset = queryset.annotate(
+                is_subscribed=Exists(subscribed_courses)
+            )
+        else:
+            # Для неаутентифицированных пользователей, поле is_subscribed будет False
+            queryset = queryset.annotate(is_subscribed=models.Value(False)) # Добавляем поле, если его нет в сериализаторе
+        return queryset
+
+class CourseDetailView(RetrieveAPIView):
+    queryset = Course.objects.all()
+    serializer_class = CourseSerializer
+    # pagination_class = StandardPagination # Пагинация для уроков внутри курса, если нужно
+
+    def get_queryset(self):
+        """
+        Аналогично CourseListView, добавляем is_subscribed для детализации.
+        """
+        queryset = super().get_queryset()
+        request = self.request
+        if request.user.is_authenticated:
+            subscribed_courses = Subscription.objects.filter(
+                user=request.user,
+                course_id=OuterRef('pk')
+            )
+            queryset = queryset.annotate(
+                is_subscribed=Exists(subscribed_courses)
+            )
+        else:
+            queryset = queryset.annotate(is_subscribed=models.Value(False))
+        return queryset
