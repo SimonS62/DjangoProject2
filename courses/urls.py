@@ -1,5 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
+from . import views
 from courses.views import (
     CourseViewSet,
     LessonCreateAPIView, LessonListAPIView, LessonRetrieveAPIView,
@@ -23,5 +24,7 @@ urlpatterns = [
     path('lesson/update/<int:pk>/', LessonUpdateAPIView.as_view(), name='lesson-update'),
     path('lesson/delete/<int:pk>/', LessonDestroyAPIView.as_view(), name='lesson-delete'),
     path('courses/<int:course_id>/subscribe/', views.ManageSubscriptionView.as_view(), name='manage_subscription'),
-    path('courses/<int:pk>/', views.CourseDetailView.as_view(), name='course_detail_with_subscription'), # Изменен для получения статуса подписки
+    path('courses/<int:pk>/', views.CourseDetailView.as_view(), name='course_detail_with_subscription'),
+    path('<int:course_id>/subscribe/', views.subscribe_course_view, name='subscribe_course'),
+    path('<int:course_id>/unsubscribe/', views.unsubscribe_course_view, name='unsubscribe_course'),
 ]

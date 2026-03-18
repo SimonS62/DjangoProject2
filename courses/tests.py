@@ -1,11 +1,12 @@
 from multiprocessing.connection import Client
+from unittest import TestCase
 
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
 from rest_framework.test import APITestCase
 from .models import Course, Lesson, Subscription
-from users.models import User # Важно импортировать вашу модель пользователя
+from users.models import User
 from .validators import validate_youtube_link
 
 
@@ -301,3 +302,109 @@ class PaginationTest(APITestCase):
         self.assertEqual(len(response.json()['results']), 5) # 15 курсов, 10 на первой странице, 5 на второй
         self.assertIsNotNone(response.json()['previous']) # Предыдущая страница должна быть
         self.assertIsNone(response.json()['next']) # Следующей страницы нет
+
+class SubscriptionViewTest(TestCase):
+
+    def setUp(self):
+        """
+        Инициализация тестового окружения.
+        Создаем пользователя, курс для тестов.
+        """
+        self.client = Client()
+        self.user = User.objects.create_user(username='testuser', password='password123')
+        self.course = Course.objects.create(title='Тестовый курс')
+        self.nonexistent_course_id = 999 # ID курса, которого не существует
+
+        # URL-адреса для тестирования
+        # Используем reverse для получения URL-адресов, включая префикс пространства имен, если он есть
+        self.subscribe_url = lambda course_id: reverse('subscribe_course', kwargs={'course_id': course_id})
+        self.unsubscribe_url = lambda course_id: reverse('unsubscribe_course', kwargs={'course_id': course_id})
+
+        # Вам нужно будет убедиться, что URL-шаблон 'course_detail' существует
+        # и его имя корректно указано в вашем проекте.
+        # Если он находится в courses/urls.py, то:
+        self.course_detail_url = lambda course_id: reverse('course_detail', kwargs={'course_id': course_id})
+        # Если бы он был в users/urls.py с namespace='users':
+        # self.course_detail_url = lambda course_id: reverse('users:course_detail', kwargs={'course_id': course_id})
+
+
+    def test_user_can_subscribe_to_course(self):
+        """
+        Проверяем, что авторизованный пользователь может подписаться на курс.
+        """
+        self.client.login(username='testuser', password='password123')
+        # По URL 'courses/1/subscribe/'
+        response = self.client.post(self.subscribe_url(self.course.id), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(Subscription.objects.filter(user=self.user, course=self.course).exists())
+        self.assertContains(response, 'Вы успешно подписались')
+
+    def test_user_can_unsubscribe_from_course(self):
+        """
+        Проверяем, что авторизованный пользователь может отписаться от курса.
+        """
+        # Сначала подписываемся
+        Subscription.objects.create(user=self.user, course=self.course)
+        self.assertTrue(Subscription.objects.filter(user=self.user, course=self.course).exists())
+
+        self.client.login(username='testuser', password='password123')
+        # По URL 'courses/1/unsubscribe/'
+        response = self.client.post(self.unsubscribe_url(self.course.id), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Subscription.objects.filter(user=self.user, course=self.course).exists())
+        self.assertContains(response, 'Вы успешно отписались')
+
+    def test_cannot_subscribe_to_nonexistent_course(self):
+        """
+        Проверяем, что нельзя подписаться на несуществующий курс.
+        """
+        self.client.login(username='testuser', password='password123')
+        # Попытка подписаться на несуществующий курс
+        self.client.post(self.subscribe_url(self.nonexistent_course_id), follow=True)
+
+        # Если get_object_or_404 или Http404 сработали, response.status_code будет 404
+        # Но с follow=True, Django пытается отобразить страницу 404.
+        # Лучше проверить, что подписка не произошла.
+        self.assertEqual(Subscription.objects.count(), 0)
+
+        # Можно также проверить, что если бы мы не использовали follow=True, был бы 404
+        # response_no_follow = self.client.post(self.subscribe_url(self.nonexistent_course_id))
+        # self.assertEqual(response_no_follow.status_code, 404)
+
+
+    def test_cannot_subscribe_without_authorization(self):
+        """
+        Проверяем, что нельзя подписаться без авторизации.
+        """
+        # Попытка подписаться без входа в систему
+        response = self.client.post(self.subscribe_url(self.course.id))
+
+        # @login_required должен перенаправить на страницу входа.
+        # Убедитесь, что LOGIN_URL в settings.py настроен правильно (обычно '/accounts/login/')
+        # 'next' параметр указывает, куда вернуться после входа.
+        expected_redirect_url = f"/accounts/login/?next={self.subscribe_url(self.course.id)}"
+        self.assertRedirects(response, expected_redirect_url)
+        self.assertFalse(Subscription.objects.exists())
+
+    def test_cannot_unsubscribe_without_authorization(self):
+        """
+        Проверяем, что нельзя отписаться без авторизации.
+        """
+        # Попытка отписаться без входа в систему
+        response = self.client.post(self.unsubscribe_url(self.course.id))
+        expected_redirect_url = f"/accounts/login/?next={self.unsubscribe_url(self.course.id)}"
+        self.assertRedirects(response, expected_redirect_url)
+        self.assertFalse(Subscription.objects.exists())
+
+    def test_unsubscribe_when_not_subscribed(self):
+        """
+        Проверяем, что если пользователь не подписан, то отписка не удаляет ничего и выдает предупреждение.
+        """
+        self.client.login(username='testuser', password='password123')
+        response = self.client.post(self.unsubscribe_url(self.course.id), follow=True)
+
+        self.assertEqual(response.status_code, 200)
+        self.assertFalse(Subscription.objects.exists())
+        self.assertContains(response, 'Вы не были подписаны')

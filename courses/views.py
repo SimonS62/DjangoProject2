@@ -1,3 +1,7 @@
+from django.contrib.auth.decorators import login_required
+from django.http import Http404
+from django.shortcuts import redirect
+from pyexpat.errors import messages
 from rest_framework import generics, viewsets, filters
 from rest_framework.permissions import IsAuthenticated, IsAdminUser, AllowAny
 from rest_framework.generics import RetrieveAPIView
@@ -175,3 +179,63 @@ class CourseDetailView(RetrieveAPIView):
         else:
             queryset = queryset.annotate(is_subscribed=models.Value(False))
         return queryset
+
+@login_required
+def subscribe_course_view(request, course_id: int):
+    """
+    Обрабатывает подписку пользователя на курс.
+    """
+    try:
+        course = Course.objects.get(pk=course_id)
+    except Course.DoesNotExist:
+        raise Http404("Курс не найден.") # Или можно использовать get_object_or_404
+
+    user = request.user
+
+    if request.method == 'POST':
+        try:
+            # Проверяем, не подписан ли пользователь уже
+            if not Subscription.objects.filter(user=user, course=course).exists():
+                Subscription.objects.create(user=user, course=course)
+                messages.success(request, f'Вы успешно подписались на курс "{course.title}"!')
+            else:
+                messages.warning(request, f'Вы уже подписаны на курс "{course.title}".')
+        except Exception as e:
+            messages.error(request, f'Произошла ошибка при подписке: {e}')
+
+        # Перенаправление на страницу деталей курса.
+        # Убедитесь, что у вас есть URL-шаблон с именем 'course_detail' (или как вы его там назвали)
+        # для отображения деталей курса.
+        return redirect('course_detail', course_id=course_id)
+    else:
+        messages.error(request, 'Недопустимый метод запроса.')
+        return redirect('course_detail', course_id=course_id)
+
+
+@login_required
+def unsubscribe_course_view(request, course_id: int):
+    """
+    Обрабатывает отписку пользователя от курса.
+    """
+    try:
+        course = Course.objects.get(pk=course_id)
+    except Course.DoesNotExist:
+        raise Http404("Курс не найден.")
+
+    user = request.user
+
+    if request.method == 'POST':
+        try:
+            subscription = Subscription.objects.get(user=user, course=course)
+            subscription.delete()
+            messages.success(request, f'Вы успешно отписались от курса "{course.title}"!')
+        except Subscription.DoesNotExist:
+            messages.warning(request, 'Вы не были подписаны на этот курс.')
+        except Exception as e:
+            messages.error(request, f'Произошла ошибка при отписке: {e}')
+
+        # Перенаправление на страницу деталей курса.
+        return redirect('course_detail', course_id=course_id)
+    else:
+        messages.error(request, 'Недопустимый метод запроса.')
+        return redirect('course_detail', course_id=course_id)
