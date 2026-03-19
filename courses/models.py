@@ -67,8 +67,15 @@ class Payment(models.Model):
     PAYMENT_METHODS = [
         ('cash', 'Наличные'),
         ('card', 'Карта'),
+        # Можно добавить другие методы: 'bank_transfer', 'online_gateway' и т.д.
     ]
 
+    STATUS_CHOICES = [
+        ('pending', 'В ожидании'),
+        ('completed', 'Завершен'),
+        ('canceled', 'Отменен'),
+        ('refunded', 'Возвращен'),
+    ]
 
     user = models.ForeignKey(
         User,
@@ -78,7 +85,7 @@ class Payment(models.Model):
     )
 
     course = models.ForeignKey(
-        Course,
+        'courses.Course', # Используйте правильный путь к вашей модели Course
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -87,7 +94,7 @@ class Payment(models.Model):
     )
 
     lesson = models.ForeignKey(
-        Lesson,
+        'lessons.Lesson', # Используйте правильный путь к вашей модели Lesson
         on_delete=models.SET_NULL,
         null=True,
         blank=True,
@@ -98,13 +105,38 @@ class Payment(models.Model):
     amount = models.DecimalField(max_digits=10, decimal_places=2, verbose_name='Сумма')
     payment_method = models.CharField(max_length=20, choices=PAYMENT_METHODS, verbose_name='Способ оплаты')
     payment_date = models.DateTimeField(auto_now_add=True, verbose_name='Дата оплаты')
+    transaction_id = models.CharField(
+        max_length=255,
+        unique=True,
+        blank=True,
+        null=True,
+        verbose_name='ID транзакции (внешний)'
+    )
+    status = models.CharField(
+        max_length=20,
+        choices=STATUS_CHOICES,
+        default='pending',
+        verbose_name='Статус оплаты'
+    )
+    extra_data = models.JSONField(blank=True, null=True, verbose_name='Дополнительные данные')
+
 
     class Meta:
         verbose_name = 'Платеж'
         verbose_name_plural = 'Платежи'
+        ordering = ['-payment_date'] # Опционально: сортировка по дате
 
     def __str__(self):
-        return f"Платеж {self.user.email} - {self.amount} руб."
+        return f"Платеж №{self.id} ({self.user.username if self.user else 'Неизвестный пользователь'}) - {self.amount} руб. [{self.get_status_display()}]"
+
+    def save(self, *args, **kwargs):
+        # Пример: Автоматическое заполнение transaction_id, если он отсутствует
+        # Это может быть реализовано иначе, в зависимости от логики вашей системы
+        if not self.transaction_id and self.status == 'completed':
+             # Генерация уникального ID, если это необходимо на данном этапе
+             # Убедитесь, что ID генерируется правильно и уникально
+             pass
+        super().save(*args, **kwargs)
 
 class Subscription(models.Model):
     """
