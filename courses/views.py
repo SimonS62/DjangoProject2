@@ -12,16 +12,16 @@ from courses.models import Course, Lesson, Payment, Subscription
 from courses.permissions import IsOwner, IsModerator
 from courses.serializers import CourseSerializer, LessonSerializer, PaymentSerializer
 from django_filters.rest_framework import DjangoFilterBackend
-from users.filters import PaymentFilter
 from users.permissions import IsModerator
 from . import models
 from .paginators import StandardPagination
 from django.db.models import Exists, OuterRef
 from drf_yasg.utils import swagger_auto_schema
 from drf_yasg import openapi
-
 from .stripe_service import StripeServiceError, create_checkout_session, create_stripe_price, create_stripe_product, \
     retrieve_checkout_session
+from users.filters import PaymentFilter
+from django_filters import rest_framework as filters
 
 
 class LessonCreateAPIView(generics.CreateAPIView):

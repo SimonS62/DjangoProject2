@@ -77,6 +77,19 @@ class Payment(models.Model):
         ('refunded', 'Возвращен'),
     ]
 
+    stripe_product_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name='Stripe Product ID'
+    )
+    stripe_price_id = models.CharField(
+        max_length=255,
+        blank=True,
+        null=True,
+        verbose_name='Stripe Price ID'
+    )
+
     user = models.ForeignKey(
         User,
         on_delete=models.CASCADE,

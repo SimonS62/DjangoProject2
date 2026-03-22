@@ -1,9 +1,13 @@
 import django_filters
-from django_filters import rest_framework as filters
+from django_filters import rest_framework as filters, FilterSet
 from courses.models import Payment
 
 
-class PaymentFilter(filters.FilterSet):
+class PaymentFilter(FilterSet):
+    class Meta:
+        model = Payment
+        fields = ['payment_method', 'course', 'lesson']
+
     # Фильтр по способу оплаты
     payment_method = django_filters.ChoiceFilter(
         choices=Payment.PAYMENT_METHODS,
@@ -34,6 +38,3 @@ class PaymentFilter(filters.FilterSet):
         lookup_expr='lte'
     )
 
-    class Meta:
-        model = Payment
-        fields = ['payment_method', 'course', 'lesson']

@@ -4,6 +4,13 @@ from .validators import validate_youtube_link
 from .models import Course, Lesson, Payment
 
 
+class LessonSerializer(serializers.ModelSerializer):
+    video_link = serializers.CharField(validators=[validate_youtube_link])
+    class Meta:
+        model = Lesson
+        fields = '__all__'
+        read_only_fields = ['owner']
+
 class CourseSerializer(serializers.ModelSerializer):
     lessons_count = serializers.SerializerMethodField()
     lessons = LessonSerializer(many=True, read_only=True)
@@ -27,14 +34,6 @@ class CourseSerializer(serializers.ModelSerializer):
             # Предполагаем, что у вас есть модель Subscription, связывающая User и Course
             return Subscription.objects.filter(user=request.user, course=obj).exists()
         return False
-
-
-class LessonSerializer(serializers.ModelSerializer):
-    video_link = serializers.CharField(validators=[validate_youtube_link])
-    class Meta:
-        model = Lesson
-        fields = '__all__'
-        read_only_fields = ['owner']
 
 
 class PaymentSerializer(serializers.ModelSerializer):
