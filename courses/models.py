@@ -107,7 +107,7 @@ class Payment(models.Model):
     )
 
     lesson = models.ForeignKey(
-        'lessons.Lesson', # Используйте правильный путь к вашей модели Lesson
+        'courses.Lesson', # Используйте правильный путь к вашей модели Lesson
         on_delete=models.SET_NULL,
         null=True,
         blank=True,

@@ -34,17 +34,17 @@ def block_inactive_users():
     """
     Фоновая задача для блокировки неактивных пользователей.
     """
-    # Проверяем, что USE_TZ = True в settings.py
-    one_month_ago = timezone.now() - timedelta(days=30)
-    # Важно: last_login может быть None для новых пользователей, не прошедших авторизацию
-    # Поэтому проверяем, что last_login не None
+    thirty_days_ago = timezone.now() - timedelta(days=30)
+
+    # Получаем пользователей, которые не входили более 30 дней и активны
     inactive_users = User.objects.filter(
-        last_login__lt=one_month_ago,
-        is_active=True,
-        last_login__isnull=False # Добавляем проверку на null
+        last_login__isnull=False,  # Пользователь должен был хотя бы раз залогиниться
+        last_login__lt=thirty_days_ago,
+        is_active=True
     )
 
     for user in inactive_users:
         user.is_active = False
         user.save()
         print(f"Пользователь {user.username} (ID: {user.id}) заблокирован из-за неактивности.")
+        # Здесь можно добавить логирование в файл или систему мониторинга
