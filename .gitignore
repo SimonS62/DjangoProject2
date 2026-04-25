@@ -1,21 +1,27 @@
-# Виртуальное окружение
-   venv/
-   .venv/
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+venv/
+env/
+*.egg-info/
 
-   # Директории Python
-   __pycache__/
-   *.pyc
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
 
-   # Файлы IDE/редакторов
-   .idea/
-   .vscode/
+# Django
+db.sqlite3
+media/
+staticfiles/
 
-   # Файлы баз данных SQLite (если используются)
-   db.sqlite3
+# Env
+.env
+.env.local
 
-   # Файлы конфигурации
-   .env
-   *.env
+# OS
+.DS_Store
+Thumbs.db
 
-   # Логи
-   *.log
