@@ -251,3 +251,33 @@ def unsubscribe_course_view(request, course_id: int):
     else:
         messages.error(request, 'Недопустимый метод запроса.')
         return redirect('course_detail', course_id=course_id)
+
+class ManageSubscriptionView(APIView):
+    """
+    Управляет подпиской пользователя на курс (подписать/отписать).
+    """
+    permission_classes = [IsAuthenticated]
+
+    def post(self, request, *args, **kwargs):
+        user = request.user
+        course_id = self.kwargs.get('course_id')
+
+        # Получаем объект курса или 404
+        try:
+            course = Course.objects.get(pk=course_id)
+        except Course.DoesNotExist:
+            return Response({"error": "Курс не найден"}, status=status.HTTP_404_NOT_FOUND)
+
+        # Ищем подписку
+        subscription = Subscription.objects.filter(user=user, course=course)
+
+        if subscription.exists():
+            # Если подписка есть — удаляем
+            subscription.delete()
+            message = 'Подписка удалена'
+        else:
+            # Если подписки нет — создаем
+            Subscription.objects.create(user=user, course=course)
+            message = 'Подписка добавлена'
+
+        return Response({"message": message}, status=status.HTTP_200_OK)
