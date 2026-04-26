@@ -281,3 +281,8 @@ class ManageSubscriptionView(APIView):
             message = 'Подписка добавлена'
 
         return Response({"message": message}, status=status.HTTP_200_OK)
+
+# Алиасы для совместимости с urls.py
+CourseDetailAPIView = CourseDetailView
+SubscribeCourseAPIView = subscribe_course_view
+UnsubscribeCourseAPIView = unsubscribe_course_view
