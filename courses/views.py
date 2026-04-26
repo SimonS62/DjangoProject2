@@ -194,63 +194,43 @@ class CourseDetailView(RetrieveAPIView):
             queryset = queryset.annotate(is_subscribed=Value(False)) # Используем Value
         return queryset
 
-@login_required
-def subscribe_course_view(request, course_id: int):
-    """
-    Обрабатывает подписку пользователя на курс.
-    """
-    try:
-        course = Course.objects.get(pk=course_id)
-    except Course.DoesNotExist:
-        # Используем Http404 для более понятной ошибки
-        raise Http404("Курс не найден.")
+class SubscribeCourseAPIView(APIView):
+    """Подписка на курс (API)."""
+    permission_classes = [IsAuthenticated]
 
-    user = request.user
-
-    if request.method == 'POST':
+    def post(self, request, course_id):
         try:
-            # Проверяем, не подписан ли пользователь уже, чтобы избежать дублирования
-            if not Subscription.objects.filter(user=user, course=course).exists():
-                Subscription.objects.create(user=user, course=course)
-                messages.success(request, f'Вы успешно подписались на курс "{course.title}"!')
-            else:
-                messages.warning(request, f'Вы уже подписаны на курс "{course.title}".')
-        except Exception as e:
-            messages.error(request, f'Произошла ошибка при подписке: {e}')
+            course = Course.objects.get(pk=course_id)
+        except Course.DoesNotExist:
+            return Response({"error": "Курс не найден"}, status=status.HTTP_404_NOT_FOUND)
 
-        # Перенаправляем пользователя обратно на страницу курса
-        return redirect('course_detail', course_id=course_id)
-    else:
-        messages.error(request, 'Недопустимый метод запроса.')
-        return redirect('course_detail', course_id=course_id)
+        user = request.user
+
+        if not Subscription.objects.filter(user=user, course=course).exists():
+           Subscription.objects.create(user=user, course=course)
+            return Response({"message": f'Вы успешно подписались на курс "{course.title}"!'}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": f'Вы уже подписаны на курс "{course.title}".'}, status=status.HTTP_200_OK)
 
 
-@login_required
-def unsubscribe_course_view(request, course_id: int):
-    """
-    Обрабатывает отписку пользователя от курса.
-    """
-    try:
-        course = Course.objects.get(pk=course_id)
-    except Course.DoesNotExist:
-        raise Http404("Курс не найден.")
+class UnsubscribeCourseAPIView(APIView):
+    """Отписка от курса (API)."""
+    permission_classes = [IsAuthenticated]
 
-    user = request.user
-
-    if request.method == 'POST':
+    def post(self, request, course_id):
         try:
-            subscription = Subscription.objects.get(user=user, course=course)
+            course = Course.objects.get(pk=course_id)
+        except Course.DoesNotExist:
+            return Response({"error": "Курс не найден"}, status=status.HTTP_404_NOT_FOUND)
+
+        user = request.user
+        subscription = Subscription.objects.filter(user=user, course=course)
+
+        if subscription.exists():
             subscription.delete()
-            messages.success(request, f'Вы успешно отписались от курса "{course.title}"!')
-        except Subscription.DoesNotExist:
-            messages.warning(request, 'Вы не были подписаны на этот курс.')
-        except Exception as e:
-            messages.error(request, f'Произошла ошибка при отписке: {e}')
-
-        return redirect('course_detail', course_id=course_id)
-    else:
-        messages.error(request, 'Недопустимый метод запроса.')
-        return redirect('course_detail', course_id=course_id)
+            return Response({"message": f'Вы отписались от курса "{course.title}".'}, status=status.HTTP_200_OK)
+        else:
+            return Response({"message": f'Вы не подписаны на курс "{course.title}".'}, status=status.HTTP_200_OK)
 
 class ManageSubscriptionView(APIView):
     """
@@ -282,7 +262,4 @@ class ManageSubscriptionView(APIView):
 
         return Response({"message": message}, status=status.HTTP_200_OK)
 
-# Алиасы для совместимости с urls.py
-CourseDetailAPIView = CourseDetailView
-SubscribeCourseAPIView = subscribe_course_view
-UnsubscribeCourseAPIView = unsubscribe_course_view
+
