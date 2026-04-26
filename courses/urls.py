@@ -23,13 +23,10 @@ urlpatterns = [
     path('lesson/delete/<int:pk>/', LessonDestroyAPIView.as_view(), name='lesson-delete'),
     path('courses/<int:course_id>/subscribe/', views.ManageSubscriptionView.as_view(), name='manage_subscription'),
     path('courses/<int:pk>/', views.CourseDetailView.as_view(), name='course_detail_with_subscription'),
-    path('<int:course_id>/subscribe/', views.subscribe_course_view, name='subscribe_course'),
-    path('<int:course_id>/unsubscribe/', views.unsubscribe_course_view, name='unsubscribe_course'),
+    path('<int:course_id>/subscribe/', views.SubscribeCourseAPIView.as_view(), name='subscribe_course'),
+    path('<int:course_id>/unsubscribe/', views.UnsubscribeCourseAPIView.as_view(), name='unsubscribe_course'),
     path('api/courses/<int:course_id>/', views.CourseDetailView.as_view(), name='api_course_detail'),
     path('api/courses/subscribe/', views.SubscribeCourseAPIView.as_view(), name='api_subscribe_course'),
     path('api/courses/unsubscribe/', views.UnsubscribeCourseAPIView.as_view(), name='api_unsubscribe_course'),
-    path('api/payments/init/', views.InitPaymentAPIView.as_view(), name='api_init_payment'),
-    path('api/payments/success/', views.PaymentSuccessView.as_view(), name='payment_success'),
-    path('api/payments/status/', views.RetrievePaymentStatusAPIView.as_view(), name='api_payment_status'),
 
 ]

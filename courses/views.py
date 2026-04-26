@@ -208,9 +208,9 @@ class SubscribeCourseAPIView(APIView):
 
         if not Subscription.objects.filter(user=user, course=course).exists():
            Subscription.objects.create(user=user, course=course)
-            return Response({"message": f'Вы успешно подписались на курс "{course.title}"!'}, status=status.HTTP_200_OK)
+           return Response({"message": f'Вы успешно подписались на курс "{course.title}"!'}, status=status.HTTP_200_OK)
         else:
-            return Response({"message": f'Вы уже подписаны на курс "{course.title}".'}, status=status.HTTP_200_OK)
+           return Response({"message": f'Вы уже подписаны на курс "{course.title}".'}, status=status.HTTP_200_OK)
 
 
 class UnsubscribeCourseAPIView(APIView):
