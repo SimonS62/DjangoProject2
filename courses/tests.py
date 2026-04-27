@@ -1,10 +1,9 @@
-from multiprocessing.connection import Client
 from unittest import TestCase
 
 from django.urls import reverse
 from rest_framework import status
 from rest_framework.exceptions import ValidationError
-from rest_framework.test import APITestCase
+from rest_framework.test import APITestCase,APIClient
 from .models import Course, Lesson, Subscription
 from users.models import User
 from .validators import validate_youtube_link
@@ -36,7 +35,7 @@ class LinkValidatorTest(APITestCase):
 
 class LessonAPITest(APITestCase):
     def setUp(self):
-        self.client = Client()
+        self.client = APIClient()
         self.user = User.objects.create_user(username='testuser', password='password123')
         self.moderator = User.objects.create_user(username='moderator', password='moderatorpassword', is_staff=True) # Предполагаем, что staff = модератор
 
@@ -168,7 +167,7 @@ class LessonAPITest(APITestCase):
 class SubscriptionAPITest(APITestCase):
 
     def setUp(self):
-        self.client = Client()
+        self.client = APIClient()
         # Используем get_user_model() если он настроен правильно
         self.user = User.objects.create_user(username='subscriber_user', password='password123')
         self.another_user = User.objects.create_user(username='another_user', password='password456')
@@ -266,7 +265,7 @@ class SubscriptionAPITest(APITestCase):
 # --- Тесты для пагинации (пример для списка курсов) ---
 class PaginationTest(APITestCase):
     def setUp(self):
-        self.client = Client()
+        self.client = APIClient()
         self.user = User.objects.create_user(username='pagetestuser', password='password123')
         self.course_list_url = reverse('course-list') # Предполагаемое имя URL для списка курсов
 
@@ -310,7 +309,7 @@ class SubscriptionViewTest(TestCase):
         Инициализация тестового окружения.
         Создаем пользователя, курс для тестов.
         """
-        self.client = Client()
+        self.client = APIClient()
         self.user = User.objects.create_user(username='testuser', password='password123')
         self.course = Course.objects.create(title='Тестовый курс')
         self.nonexistent_course_id = 999 # ID курса, которого не существует
